@@ -1,0 +1,89 @@
+﻿@page "/counter"
+@using System.ComponentModel.DataAnnotations
+@using System.Runtime.CompilerServices
+@using MudBlazor.Extensions
+@using Microsoft.AspNetCore.Components.Forms
+@inject IWebHostEnvironment env
+
+<MudText>Titel</MudText>
+
+<MudGrid class="pb-5">
+    <MudItem xs="12" Class="d-flex">
+        <MudCard Width="100%" Elevation="5">
+            <MudCardContent>
+                <EditForm Model="_context">
+                    <DataAnnotationsValidator/>
+                    <div class="d-flex">
+                        <InputFile OnChange="@OnFileUpload" />
+                        @* <MudGrid class="pb-5"> *@
+                        @*     <MudItem xs="6"> *@
+                        @*         <MudDatePicker @bind-Date="@_context.date1" For="@(() => _context.date1)" Editable="true" Label="Datum 1" Placeholder="Datum 1" DateFormat="dd.MM.yyyy"></MudDatePicker> *@
+                        @*     </MudItem> *@
+                        @*     <MudItem xs="6"> *@
+                        @*         <MudDatePicker @bind-Date="@_context.date2" For="@(() => _context.date2)" Editable="true" Label="Datum 2" Placeholder="Datum 2" DateFormat="dd.MM.yyyy"></MudDatePicker> *@
+                        @*     </MudItem> *@
+                        @*     <MudSpacer></MudSpacer> *@
+                        @*     <MudItem xs="6"> *@
+                        @*         <MudTextField @bind-Value="@_context.textzeile" For="@(() => _context.textzeile)" Label="Text"></MudTextField > *@
+                        @*     </MudItem>                             *@
+                        @* </MudGrid> *@
+                    </div>
+                </EditForm>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    Model _context = new Model();
+    
+    public class Model
+    {
+        [CustomDate(min: "01.05.2023", max: "25.05.2023")]
+        public DateTime? date1 { get; set; } = DateTime.Today;
+        
+        [CustomDate(min: "01.06.2023", max: "25.06.2023")]
+        public DateTime? date2 { get; set; } = DateTime.Today.AddDays(5);
+
+        [Required(ErrorMessage = "Required")]
+        [StringLength(6, MinimumLength = 3, ErrorMessage = "Maximum 6 characters")]
+        [MinLength(3, ErrorMessage = "Minimum 3 characters")]
+        public string textzeile { get; set; } = "12345";
+    }
+    
+    public class CustomDateAttribute : RangeAttribute
+    {
+        public CustomDateAttribute(string min, string max)
+            : base(typeof(DateTime), 
+        min,
+        max) 
+    { } 
+    }
+    
+    private async Task OnFileUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            var path = Path.Combine(env.WebRootPath, "uploads", file.Name);
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path)); // Erstellt das Verzeichnis, falls es nicht existiert
+
+            using (var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 15)) // Begrenzt die Dateigröße auf 15 MB
+            {
+                Console.WriteLine("OpenReadStream");
+                using (var fileStream = new FileStream(path, FileMode.Create))
+                {
+                    Console.WriteLine("FileStream");
+                    await stream.CopyToAsync(fileStream);
+                }
+            }
+            Console.WriteLine("Alles ok");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw;
+        }
+    }
+}
